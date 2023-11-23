@@ -1,12 +1,13 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
-const { config } = require('./repositories.js');
+const { config } = require('./config.js');
 
-var browser;
-var ajaxUrls;
+var browser,
+	page,
+	ajaxUrls;
 
-//load cookie function
+
 const loadCookie = async (page) => {
 	const cookieJson = await fs.readFileSync('./cookies.json');
 	const cookies = JSON.parse(cookieJson);
@@ -14,12 +15,7 @@ const loadCookie = async (page) => {
 }
 
 const getPagesToBeTranslated = async () => {
-	const page = await browser.newPage();
-
-	await page.goto(`${config.baseUrl}/translation-generator/pages.php`, {
-		waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2'],
-		timeout: 0
-	});
+	await page.goto(`${config.baseUrl}/translation-generator/pages.php`, config.goToUrlParameters);
 	await page.content();
 
 	innerText = await page.evaluate(() => {
@@ -54,14 +50,8 @@ const buildUrl = (path, params) => {
  * Get TYPO3 ajax URLs
  */
 const getAjaxUrls = async () => {
-	const page = await browser.newPage();
 
-	await loadCookie(page);
-
-	await page.goto(config.baseUrl + '/typo3/', {
-		waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2'],
-		timeout: 0
-	});
+	await page.goto(config.baseUrl + '/typo3/', config.goToUrlParameters);
 
 	const elementHandle = await page.$('#typo3-contentIframe');
 	const frame = await elementHandle.contentFrame();
@@ -77,18 +67,11 @@ const getAjaxUrls = async () => {
  * @returns
  */
 const getItemsToTranslate = async (urlParams) => {
-	const page = await browser.newPage();
-
-	await loadCookie(page);
-
 	let url = buildUrl(
 		ajaxUrls.records_localize_summary,
 		urlParams
 	)
-	await page.goto(url, {
-		waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2'],
-		timeout: 0
-	});
+	await page.goto(url, config.goToUrlParameters);
 	await page.content();
 
 	innerText = await page.evaluate(() => {
@@ -105,23 +88,17 @@ const getItemsToTranslate = async (urlParams) => {
 }
 
 const translateRecords = async (urlParams) => {
-	const page = await browser.newPage();
-
-	await loadCookie(page);
-
 	let url = buildUrl(
 		ajaxUrls.records_localize,
 		urlParams
 	);
 
-	await page.goto(url, {
-		waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2'],
-		timeout: 0
-	});
+	await page.goto(url, config.goToUrlParameters);
 }
 
 const translatePage = async (pageId, destLanguageId) => {
 	console.log(`> Getting the content elements from page ID ${pageId} in language ${destLanguageId}`);
+
 	let recordsToTranslate = await getItemsToTranslate({
 		pageId,
 		destLanguageId,
@@ -141,15 +118,17 @@ const translatePage = async (pageId, destLanguageId) => {
 }
 
 
-const innit = async () => {
+const translatePages = async () => {
 	browser = await puppeteer.launch({
-		headless: 'new',
-		// headless: false,
+		headless: (config.openBrowser ? false : 'new'),
 		args: [
 			'--disable-web-security',
 			'--disable-features=IsolateOrigins,site-per-process'
 		]
 	});
+
+	page = await browser.newPage();
+	await loadCookie(page);
 
 	await getAjaxUrls();
 
@@ -165,10 +144,9 @@ const innit = async () => {
 		console.log('-------')
 		console.log(`# ${i} out of ${pagesToBeTranslatedCount}`);
 
-		if (i < config.startIndex) {
+		if (i++ < config.startIndex) {
 			continue;
 		}
-		i++;
 
 		for (let languageId of pagesToBeTranslated[pageId]) {
 			await translatePage(pageId, languageId);
@@ -178,4 +156,4 @@ const innit = async () => {
 	browser.close();
 };
 
-innit();
+translatePages();
