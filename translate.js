@@ -15,14 +15,21 @@ const loadCookie = async (page) => {
 }
 
 const getPagesToBeTranslated = async () => {
-	await page.goto(`${config.baseUrl}/translation-generator/pages.php`, config.goToUrlParameters);
-	await page.content();
+	if (config.listOfPagesFormat == 'url') {
+		await page.goto(config.baseUrl + config.listOfPages, config.goToUrlParameters);
+		await page.content();
 
-	innerText = await page.evaluate(() => {
-		return JSON.parse(document.querySelector('body').innerText);
-	});
+		innerText = await page.evaluate(() => {
+			return JSON.parse(document.querySelector('body').innerText);
+		});
 
-	return innerText;
+		return innerText;
+	}
+
+	if (config.listOfPagesFormat == 'file') {
+		const pages = await fs.readFileSync(config.listOfPages);
+		return JSON.parse(pages);
+	}
 }
 
 /**
@@ -97,7 +104,7 @@ const translateRecords = async (urlParams) => {
 }
 
 const translatePage = async (pageId, destLanguageId) => {
-	console.log(`> Getting the content elements from page ID ${pageId} in language ${destLanguageId}`);
+	console.log(`> Page ID ${pageId} || Language ID: ${destLanguageId}`);
 
 	let recordsToTranslate = await getItemsToTranslate({
 		pageId,
@@ -106,7 +113,8 @@ const translatePage = async (pageId, destLanguageId) => {
 	});
 
 	if (recordsToTranslate.length > 0) {
-		console.log(`> Translating ${recordsToTranslate.length} items: ${recordsToTranslate.join(', ')}`);
+		console.log(`> Items being translated: ${recordsToTranslate.join(', ')}`);
+
 		await translateRecords({
 			pageId,
 			destLanguageId,
