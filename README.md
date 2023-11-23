@@ -17,7 +17,30 @@ This code helps automate it by logging into TYPO3 and translating the pages for 
 
 If the script times out, or you need to stop it, make a note of the page index (e.g. `# 113 out of 1650`) and update the `startIndex` parameter in `config.js` to start from there.
 
-Once completed, I have run the following SQL to update the translated content to match the visibility & position of the default content element
+## Post-use handy SQL
+
+Once completed, I have run the following SQL statements
+
+**Run with caution and take _all_ the backups**
+
+### Match content element to correct container
+
+This updates the content element to use the container in the same language
+
+```sql
+UPDATE tt_content AS a 
+LEFT JOIN tt_content AS b ON a.tx_container_parent = b.uid
+SET a.tx_container_parent = b.l18n_parent
+WHERE a.tx_container_parent > 0
+AND a.sys_language_uid != b.sys_language_uid
+AND a.deleted = 0
+AND a.sys_language_uid = 0
+;
+```
+
+### Match translated content status to default language
+
+This matches any translated content elements to the default language - status & container
 
 ```sql
 UPDATE tt_content AS a
@@ -26,7 +49,8 @@ SET a.sorting = b.sorting,
 	a.deleted = b.deleted,
 	a.hidden = b.hidden,
 	a.colPos = b.colPos,
-	a.CType = b.CType
+	a.CType = b.CType,
+	 a.tx_container_parent = b.tx_container_parent
 WHERE a.l18n_parent IS NOT NULL
 AND b.sorting IS NOT NULL
 AND a.l18n_parent > 0
