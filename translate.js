@@ -88,7 +88,9 @@ const getItemsToTranslate = async (urlParams) => {
 	let records = [];
 
 	for (let key in innerText.records) {
-		records.push(innerText.records[key][0].uid);
+		for (let item of innerText.records[key]) {
+			records.push(item.uid);
+		}
 	}
 
 	return records;
