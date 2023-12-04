@@ -20,7 +20,7 @@ exports.config = {
 	// - if `url`, then relative to `baseUrl`
 	// - if `file` then relative to this folder
 	// output should be an object of page ids with an array of languages to translate
-	listOfPages: '/translation-generator/pages.php',
+	listOfPages: '/pages.php',
 
 	// What parameters are passed to the `page.goto` function
 	goToUrlParameters: {

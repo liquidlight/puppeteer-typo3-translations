@@ -1,9 +1,9 @@
 <?php
 
-$envs = parse_ini_file('../../.env');
+$envs = parse_ini_file('../.env');
 
-if (is_file('../../.env.local')) {
-	$envs = array_merge($envs, parse_ini_file('../../.env.local'));
+if (is_file('../.env.local')) {
+	$envs = array_merge($envs, parse_ini_file('../.env.local'));
 }
 
 $mysqli = new mysqli(
