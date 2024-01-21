@@ -5,7 +5,7 @@ const { config } = require('./config.js');
 
 const login = async () => {
 	const browser = await puppeteer.launch({
-		headless: (config.openBrowser ? false : 'new'),
+		headless: false,
 		args: [
 			'--disable-web-security',
 			'--disable-features=IsolateOrigins,site-per-process'
